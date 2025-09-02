@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <title>Chat App</title>
+    <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <h2>💬 チャットルーム</h2>
+
+    <div id="username-area">
+        ニックネーム: <input type="text" id="username"/>
+        <button onclick="connect()">参加</button>
+    </div>
+
+    <div id="chat-container" style="display: none;">
+        <div id="chat"></div>
+        <div id="preview-area"></div>
+        <div id="input-area">
+            <input type="text" id="message" placeholder="メッセージを入力"/>
+            
+            <!-- カスタムファイル選択ボタン -->
+            <label for="imageInput" class="custom-file-btn">画像選択</label>
+            <input type="file" id="imageInput" accept="image/*" hidden/>
+
+            <button onclick="sendMessage()">送信</button>
+            <button onclick="leaveRoom()" class="leave-btn">退室</button>
+        </div>
+    </div>
+	
+	<div id="imageModal" class="modal" style="display:none;">
+	  <span class="close" onclick="closeModal()">&times;</span>
+	  <img class="modal-content" id="modalImage">
+	</div>
+
+    <script>
+        var stompClient = null;
+        var username = null;
+        var selectedImage = null;
+
+        function connect() {
+            username = document.getElementById('username').value;
+            if (!username) {
+                alert("ニックネームを入力してください！");
+                return;
+            }
+
+            var socket = new SockJS('/chat-websocket');
+            stompClient = Stomp.over(socket);
+
+            stompClient.connect({}, function (frame) {
+                document.getElementById('username-area').style.display = "none";
+                document.getElementById('chat-container').style.display = "flex";
+
+                stompClient.subscribe('/topic/public', function (msg) {
+                    showMessage(JSON.parse(msg.body));
+                });
+
+                stompClient.send("/app/chat.addUser", {}, JSON.stringify({
+                    sender: username,
+                    type: 'JOIN'
+                }));
+            });
+
+            document.getElementById('imageInput').addEventListener('change', handleImageSelect);
+        }
+
+        // 画像選択時に縮小＆プレビュー
+        function handleImageSelect(event) {
+            var file = event.target.files[0];
+            if (file) {
+                var reader = new FileReader();
+                reader.onload = function(e) {
+                    var img = new Image();
+                    img.onload = function() {
+                        var maxWidth = 400, maxHeight = 400;
+                        var width = img.width, height = img.height;
+
+                        if (width > height) {
+                            if (width > maxWidth) { height *= maxWidth / width; width = maxWidth; }
+                        } else {
+                            if (height > maxHeight) { width *= maxHeight / height; height = maxHeight; }
+                        }
+
+                        var canvas = document.createElement('canvas');
+                        canvas.width = width; canvas.height = height;
+                        var ctx = canvas.getContext('2d');
+                        ctx.drawImage(img, 0, 0, width, height);
+
+                        // JPEG 90% 品質で保存
+                        selectedImage = canvas.toDataURL("image/jpeg", 0.9);
+
+                        showPreview(selectedImage);
+                    };
+                    img.src = e.target.result;
+                };
+                reader.readAsDataURL(file);
+            }
+        }
+
+        function sendMessage() {
+            var messageContent = document.getElementById('message').value;
+            if ((messageContent || selectedImage) && stompClient) {
+                stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+                    sender: username,
+                    content: messageContent || "",
+                    type: "CHAT",
+                    image: selectedImage
+                }));
+                document.getElementById('message').value = '';
+                document.getElementById('imageInput').value = '';
+                document.getElementById('preview-area').innerHTML = '';
+                selectedImage = null;
+            }
+        }
+
+        function sendReaction(targetMessageId, emoji) {
+			// 自分がすでにリアクションしているか確認
+			let existing = document.querySelector(`#${targetMessageId} .reaction[data-user='${username}']`);
+
+			if (existing) {
+			    // 押していたら削除
+			    existing.remove();
+			    stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+			        sender: username,
+			        type: "REACTION",
+			        targetMessageId: targetMessageId,
+			        reaction: null  // 削除
+			    }));
+			} else {
+			    // 押していなければ追加
+			    stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+			        sender: username,
+			        type: "REACTION",
+			        targetMessageId: targetMessageId,
+			        reaction: emoji
+			    }));
+			}
+        }
+
+        function showPreview(base64Image) {
+            var previewArea = document.getElementById('preview-area');
+            previewArea.innerHTML = "";
+            var img = document.createElement('img');
+            img.src = base64Image;
+            img.style.maxWidth = "100px";
+            img.style.maxHeight = "100px";
+            img.style.margin = "5px";
+            previewArea.appendChild(img);
+        }
+
+        function leaveRoom() {
+            if (stompClient && username) {
+                stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+                    sender: username,
+                    type: 'LEAVE'
+                }));
+                stompClient.disconnect();
+                document.getElementById('chat-container').style.display = "none";
+                document.getElementById('username-area').style.display = "block";
+                document.getElementById('chat').innerHTML = "";
+            }
+        }
+
+        function showMessage(message) {
+            var chat = document.getElementById('chat');
+            var msgElement = document.createElement('div');
+            msgElement.id = "msg-" + Date.now();
+
+            if (message.type === 'JOIN') {
+                msgElement.className = "join";
+                msgElement.innerText = message.sender + " が参加しました";
+            } else if (message.type === 'LEAVE') {
+                msgElement.className = "join";
+                msgElement.innerText = message.sender + " が退室しました";
+            } else if (message.type === 'CHAT') {
+			    msgElement.className = (message.sender === username) ? "message my-message" : "message other-message";
+
+			    // 名前表示
+			    var headerEl = document.createElement("div");
+			    headerEl.style.fontWeight = "bold";
+			    headerEl.innerText = message.sender + "；";
+			    msgElement.appendChild(headerEl);
+
+			    // テキストがあれば追加
+			    if (message.content) {
+			        var textEl = document.createElement("div");
+			        textEl.innerText = message.content;
+			        msgElement.appendChild(textEl);
+			    }
+
+			    // 画像があれば追加
+				if (message.image) {
+				    var img = document.createElement("img");
+				    img.src = message.image;
+				    img.style.maxWidth = "100%";
+				    img.style.borderRadius = "8px";
+				    img.style.marginTop = "5px";
+
+				    // クリックで拡大
+				    img.style.cursor = "pointer";
+				    img.onclick = function() {
+				        openModal(message.image);
+				    };
+
+				    msgElement.appendChild(img);
+				}
+
+			    // リアクションボタン
+			    var reactionBtn = document.createElement("button");
+			    reactionBtn.innerText = "👍";
+			    reactionBtn.className = "reaction-btn";
+			    reactionBtn.onclick = function() {
+			        sendReaction(msgElement.id, "👍");
+			    };
+			    msgElement.appendChild(reactionBtn);
+				
+			} else if (message.type === 'REACTION') {
+				var target = document.getElementById(message.targetMessageId);
+				if (target) {
+				    // 既にそのユーザーのリアクションがあるか？
+				    var existing = target.querySelector(`.reaction[data-user='${message.sender}']`);
+				    
+				    if (message.reaction === null) {
+				        // リアクション削除
+				        if (existing) existing.remove();
+				    } else {
+				        if (!existing) {
+				            var reactionEl = document.createElement("span");
+				            reactionEl.innerText = message.reaction;
+				            reactionEl.className = "reaction";
+				            reactionEl.setAttribute("data-user", message.sender);
+				            target.appendChild(reactionEl);
+				        }
+				    }
+				}
+            }
+
+            chat.appendChild(msgElement);
+            chat.scrollTop = chat.scrollHeight;
+        }
+		
+		function openModal(imageSrc) {
+		    var modal = document.getElementById("imageModal");
+		    var modalImg = document.getElementById("modalImage");
+		    modal.style.display = "block";
+		    modalImg.src = imageSrc;
+		}
+
+		function closeModal() {
+		    document.getElementById("imageModal").style.display = "none";
+		}
+    </script>
+</body>
+</html>
