@@ -103,7 +103,10 @@
         function sendMessage() {
             var messageContent = document.getElementById('message').value;
             if ((messageContent || selectedImage) && stompClient) {
+				let msgId = "msg-" + crypto.randomUUID();
+				
                 stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+					id: msgId,
                     sender: username,
                     content: messageContent || "",
                     type: "CHAT",
@@ -167,7 +170,7 @@
         function showMessage(message) {
             var chat = document.getElementById('chat');
             var msgElement = document.createElement('div');
-            msgElement.id = "msg-" + Date.now();
+            msgElement.id = message.id || ("msg-" + crypto.randomUUID());
 
             if (message.type === 'JOIN') {
                 msgElement.className = "join";
