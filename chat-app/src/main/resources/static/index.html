@@ -10,6 +10,8 @@
 <body>
     <h2>💬 チャットルーム</h2>
 
+	<button id="delete-message">削除</button>
+	
     <div id="username-area">
         ニックネーム: <input type="text" id="username"/>
         <button onclick="connect()">参加</button>
@@ -168,6 +170,7 @@
             var chat = document.getElementById('chat');
             var msgElement = document.createElement('div');
             msgElement.id = "msg-" + Date.now();
+			
 
             if (message.type === 'JOIN') {
                 msgElement.className = "join";
@@ -252,6 +255,15 @@
 		function closeModal() {
 		    document.getElementById("imageModal").style.display = "none";
 		}
+		
+		let deleteBtn = document.getElementById('delete-message');
+		deleteBtn.onclick = deleteButtonClick;
+		
+		function deleteButtonClick() {
+			console.log("実行チェック");
+		}
+		
+		
     </script>
 </body>
 </html>
