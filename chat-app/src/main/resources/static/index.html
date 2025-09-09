@@ -8,6 +8,7 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
+	
     <h2>💬 チャットルーム</h2>
 
     <div id="username-area">
@@ -55,7 +56,6 @@
                 document.getElementById('chat-container').style.display = "flex";
 
                 stompClient.subscribe('/topic/public', function (msg) {
-					showName(JSON.parse(msg.body));
                     showMessage(JSON.parse(msg.body));
                 });
 
@@ -171,6 +171,7 @@
         function showMessage(message) {
             var chat = document.getElementById('chat');
             var msgElement = document.createElement('div');
+			var nameElement = document.createElement('div');
             msgElement.id = message.id || ("msg-" + crypto.randomUUID());
 
             if (message.type === 'JOIN') {
@@ -182,12 +183,11 @@
             } else if (message.type === 'CHAT') {
 			    msgElement.className = (message.sender === username) ? "message my-message" : "message other-message";
 
-			    // 名前表示
-			    var headerEl = document.createElement("div");
-			    headerEl.style.fontWeight = "bold";
-			    headerEl.innerText = message.sender + "；";
-			    msgElement.appendChild(headerEl);
-
+				// 名前表示
+               nameElement.className = (message.sender === username) ? "my-name" : "other-name";
+               nameElement.innerText = message.sender;
+               chat.appendChild(nameElement);
+			   
 			    // テキストがあれば追加
 			    if (message.content) {
 			        var textEl = document.createElement("div");
@@ -211,15 +211,18 @@
 					
 				    msgElement.appendChild(img);
 				}
-
-			    // リアクションボタン
+				// リアクションボタン
 			    var reactionBtn = document.createElement("button");
+                reactionBtn.className = (message.sender === username) ? "my-name" : "other-name reaction-btn";
 			    reactionBtn.innerText = "👍";
-			    reactionBtn.className = "reaction-btn";
 			    reactionBtn.onclick = function() {
 			        sendReaction(msgElement.id, "👍");
 			    };
-			    msgElement.appendChild(reactionBtn);
+                chat.appendChild(msgElement);
+                if(message.sender != username){
+                    chat.appendChild(reactionBtn);  
+                }
+                chat.scrollTop = chat.scrollHeight;
 				
 			} else if (message.type === 'REACTION') {
 				var target = document.getElementById(message.targetMessageId);
@@ -240,32 +243,11 @@
 				        }
 				    }
 				}
+
+				chat.appendChild(msgElement);
+				chat.scrollTop = chat.scrollHeight;
             }
-
-            chat.appendChild(msgElement);
-            chat.scrollTop = chat.scrollHeight;
         }
-		
-		function showName(message) {
-            var chat = document.getElementById('chat');
-            var msgElement = document.createElement('div');
-            msgElement.id = message.id || ("msg-" + crypto.randomUUID());
-           
-          	if (message.type === 'CHAT') {
-			    msgElement.className = (message.sender === username) ? "message my-message" : "message other-message";
-
-			    // 名前表示
-			    var headerEl = document.createElement("div");
-			    headerEl.style.fontWeight = "bold";
-			    headerEl.innerText = message.sender + "；";
-			    msgElement.appendChild(headerEl);
-				
-			}
-			    
-            chat.appendChild(msgElement);
-            chat.scrollTop = chat.scrollHeight;
-        }
-		
 		
 		function openModal(imageSrc) {
 		    var modal = document.getElementById("imageModal");
