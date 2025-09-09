@@ -1,5 +1,7 @@
 package com.example.chatApp.model;
 
+import java.time.LocalDateTime;
+
 public class ChatMessage {
     private String id;
     private MessageType type;
@@ -8,7 +10,8 @@ public class ChatMessage {
     private String image;
     private String reaction;
     private String targetMessageId;
-
+    private LocalDateTime time;
+    
     public enum MessageType {
         CHAT,
         JOIN,
@@ -37,4 +40,7 @@ public class ChatMessage {
 
     public String getTargetMessageId() { return targetMessageId; }
     public void setTargetMessageId(String targetMessageId) { this.targetMessageId = targetMessageId; }
+    
+    public LocalDateTime getTime(){ return time; }
+    public void setTime(LocalDateTime time) { this.time = time; }
 }

@@ -1,5 +1,7 @@
 package com.example.chatApp.controller;
 
+import java.time.LocalDateTime;
+
 import org.springframework.messaging.handler.annotation.MessageMapping;
 import org.springframework.messaging.handler.annotation.SendTo;
 import org.springframework.stereotype.Controller;
@@ -23,8 +25,12 @@ public class ChatController {
             // 必要ならDBに記録したり集計も可能
             // 今回は受け取ったまま返して全員に配信
             return message;
+            
         }
-
+        
+        //現在時刻をセット
+        message.setTime(LocalDateTime.now());
+        
         // ふつうのチャット・JOIN・LEAVEはそのまま返す
         return message;
     }

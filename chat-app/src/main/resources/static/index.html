@@ -6,7 +6,20 @@
     <script src="https://cdn.jsdelivr.net/npm/sockjs-client@1/dist/sockjs.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/stompjs@2.3.3/lib/stomp.min.js"></script>
     <link rel="stylesheet" href="css/style.css">
+	<style>
+		body {
+			background-image: url(image/kinkakuji.jpeg);
+			background-size: cover;
+		    font-family: "Segoe UI", Arial, sans-serif;
+		    display: flex;
+		    flex-direction: column;
+		    align-items: center;
+		    margin: 0;
+		    height: 100vh;
+		}
+	</style>
 </head>
+
 <body>
 	
     <h2>💬 チャットルーム</h2>
@@ -172,6 +185,7 @@
             var chat = document.getElementById('chat');
             var msgElement = document.createElement('div');
 			var nameElement = document.createElement('div');
+			var timeElement = document.oreateElement('div');
             msgElement.id = message.id || ("msg-" + crypto.randomUUID());
 
             if (message.type === 'JOIN') {
@@ -187,6 +201,11 @@
                nameElement.className = (message.sender === username) ? "my-name" : "other-name";
                nameElement.innerText = message.sender;
                chat.appendChild(nameElement);
+			   
+			   //時刻表示 
+			   timeElement.className = (message.sender === username) ? "my-name" : "other-name";
+               timeElement.innerText = message.time.toString();
+               chat.appendChild(timeElement);
 			   
 			    // テキストがあれば追加
 			    if (message.content) {
@@ -223,6 +242,8 @@
                     chat.appendChild(reactionBtn);  
                 }
                 chat.scrollTop = chat.scrollHeight;
+				
+				
 				
 			} else if (message.type === 'REACTION') {
 				var target = document.getElementById(message.targetMessageId);
