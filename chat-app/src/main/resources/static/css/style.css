@@ -178,3 +178,34 @@ button:hover {
   font-weight: bold;
   cursor: pointer;
 }
+
+.chat-container {
+    max-width: 600px;
+    margin: 0 auto;
+    padding: 20px;
+    background: #e5ddd5;
+    font-family: "Helvetica", sans-serif;
+}
+
+.message {
+    display: flex;
+    margin: 10px 0;
+}
+
+.message.left {
+    justify-content: flex-start;
+}
+
+.message.right {
+    justify-content: flex-end;
+}
+
+.bubble {
+    max-width: 70%;
+    padding: 10px 15px;
+    border-radius: 15px;
+    position: relative;
+    word-wrap: break-word;
+    font-size: 14px;
+    line-height: 1.4;
+}

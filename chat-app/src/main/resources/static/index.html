@@ -55,6 +55,7 @@
                 document.getElementById('chat-container').style.display = "flex";
 
                 stompClient.subscribe('/topic/public', function (msg) {
+					showName(JSON.parse(msg.body));
                     showMessage(JSON.parse(msg.body));
                 });
 
@@ -207,7 +208,7 @@
 				    img.onclick = function() {
 				        openModal(message.image);
 				    };
-
+					
 				    msgElement.appendChild(img);
 				}
 
@@ -244,6 +245,27 @@
             chat.appendChild(msgElement);
             chat.scrollTop = chat.scrollHeight;
         }
+		
+		function showName(message) {
+            var chat = document.getElementById('chat');
+            var msgElement = document.createElement('div');
+            msgElement.id = message.id || ("msg-" + crypto.randomUUID());
+           
+          	if (message.type === 'CHAT') {
+			    msgElement.className = (message.sender === username) ? "message my-message" : "message other-message";
+
+			    // 名前表示
+			    var headerEl = document.createElement("div");
+			    headerEl.style.fontWeight = "bold";
+			    headerEl.innerText = message.sender + "；";
+			    msgElement.appendChild(headerEl);
+				
+			}
+			    
+            chat.appendChild(msgElement);
+            chat.scrollTop = chat.scrollHeight;
+        }
+		
 		
 		function openModal(imageSrc) {
 		    var modal = document.getElementById("imageModal");
