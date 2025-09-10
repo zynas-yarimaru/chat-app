@@ -195,7 +195,7 @@
                 msgElement.className = "join";
                 msgElement.innerText = message.sender + " が退室しました";
             } else if (message.type === 'CHAT') {
-			    msgElement.className = (message.sender === username) ? "message my-message" : "message other-message";
+			    msgElement.className = (message.sender === username) ? "message my-message message-size" : "message other-message message-size";
 
 				// 名前表示
                nameElement.className = (message.sender === username) ? "my-name" : "other-name";

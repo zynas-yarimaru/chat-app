@@ -42,6 +42,10 @@ h2 {
     margin-top: 5px;
 }
 
+.message-size {
+	font-size: 27px;
+}
+
 .message {
     margin: 5px 0;
     padding: 8px 12px;
