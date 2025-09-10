@@ -9,6 +9,9 @@ import com.example.chatApp.model.ChatMessage;
 @Controller
 public class ChatController {
 
+	
+	
+	
     @MessageMapping("/chat.sendMessage") // /app/chat.sendMessage に送信されたら実行
     @SendTo("/topic/public")             // 全員に配信
     public ChatMessage sendMessage(ChatMessage message) {

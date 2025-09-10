@@ -9,8 +9,6 @@
 </head>
 <body>
     <h2>💬 チャットルーム</h2>
-
-	<button id="delete-message">削除</button>
 	
     <div id="username-area">
         ニックネーム: <input type="text" id="username"/>
@@ -30,6 +28,7 @@
                 <button onclick="sendStanpMessage(this)" class="stanpMessage">✋</button>
                 <button onclick="sendStanpMessage(this)" class="stanpMessage">✌</button>
                 <button onclick="sendStanpMessage(this)" class="stanpMessage">✍</button>
+				<button onclick="sendStanpMessage(this)" class="stanpMessage">&#128512;</button>
             </div>
             
             <div>
@@ -53,6 +52,12 @@
 	  <img class="modal-content" id="modalImage">
 	</div>
 
+	<div id="deleteConfirm" style="display:none;" class="deleteConfirm">
+		<p>このメッセージを削除しますか？</p>
+		<button id="noBtn">いいえ</button>
+		<button id="yesBtn">はい</button>
+	</div>	
+	
     <script>
         var stompClient = null;
         var username = null;
@@ -202,7 +207,8 @@
         }
 
         function showMessage(message) {
-            var chat = document.getElementById('chat');
+           console.log("内容", message);
+		    var chat = document.getElementById('chat');
             var msgElement = document.createElement('div');
             msgElement.id = "msg-" + Date.now();
 			
@@ -227,6 +233,13 @@
 			        var textEl = document.createElement("div");
 			        textEl.innerText = message.content;
 			        msgElement.appendChild(textEl);
+					
+					if (message.id === "stanp") {
+						console.log("可能");
+						textEl.style.fontSize = "3rem";
+						textEl.style.textAlign = "center";
+					}	
+					
 			    }
 
 			    // 画像があれば追加
@@ -254,6 +267,7 @@
 				var deleteBtn = document.createElement("button");
 				deleteBtn.innerText = "削除";
 				deleteBtn.className = "reaction-btn";
+				deleteBtn.style.color = "black";
 			
 				
 			    reactionBtn.onclick = function() {
@@ -261,8 +275,21 @@
 			    };
 				
 				deleteBtn.onclick = function() {
-					deleteEvent(msgElement.id);
-				}
+
+	               document.getElementById("deleteConfirm").style.display = "block";
+	               
+	               const noBtn = document.getElementById("noBtn");
+	               const yesBtn = document.getElementById("yesBtn");
+	               
+	               noBtn.onclick = function() {
+	                   document.getElementById("deleteConfirm").style.display = "none";
+	               }
+	
+	               yesBtn.onclick = function() {
+	                   deleteEvent(msgElement.id);                        
+	                   document.getElementById("deleteConfirm").style.display = "none";
+	               }
+				};
 				
 			    msgElement.appendChild(reactionBtn);
 				
@@ -307,7 +334,6 @@
 		
 			
 		function deleteEvent(deleteMessageId) {
-			console.log("aaa");
 			stompClient.send("/app/chat.deleteMessage", {}, JSON.stringify({
 				targetMessageId: deleteMessageId,
 				type: "DELETE"
@@ -317,7 +343,13 @@
 		}
 		
 		function stanpFunction(){
-			document.getElementById("stanpElement").style.display= "block";
+			const stanpElement = document.getElementById("stanpElement");
+			if (stanpElement.style.display === "none"){
+				stanpElement.style.display = "block";
+			} else{
+				stanpElement.style.display = "none";
+			}
+	
 		};
 		
 		function sendStanpMessage(button){
@@ -326,6 +358,7 @@
 			stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
                 sender: username,
                 content: value || "",
+				id: "stanp",
                 type: "CHAT"
             }));
             document.getElementById('message').value = '';
