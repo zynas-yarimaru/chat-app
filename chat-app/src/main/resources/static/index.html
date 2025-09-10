@@ -20,15 +20,31 @@
     <div id="chat-container" style="display: none;">
         <div id="chat"></div>
         <div id="preview-area"></div>
-        <div id="input-area">
-            <input type="text" id="message" placeholder="メッセージを入力"/>
+		<div id="input-area">
+		            
+            <div id="stanpElement" style = "display: none;">
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">☹</button>
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">☺</button>
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">☻</button>
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">✊</button>
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">✋</button>
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">✌</button>
+                <button onclick="sendStanpMessage(this)" class="stanpMessage">✍</button>
+            </div>
             
-            <!-- カスタムファイル選択ボタン -->
-            <label for="imageInput" class="custom-file-btn">画像選択</label>
-            <input type="file" id="imageInput" accept="image/*" hidden/>
-
-            <button onclick="sendMessage()">送信</button>
-            <button onclick="leaveRoom()" class="leave-btn">退室</button>
+            <div>
+                <input type="text" id="message" placeholder="メッセージを入力"/>
+                
+                <!-- カスタムファイル選択ボタン -->
+                <label for="imageInput" class="custom-file-btn">画像選択</label>
+                <input type="file" id="imageInput" accept="image/*" hidden/>
+                
+                <!-- スタンプボタン -->
+                <button onclick="stanpFunction()" class="custom-file-btn">スタンプ</button>
+    
+                <button onclick="sendMessage()">送信</button>
+                <button onclick="leaveRoom()" class="leave-btn">退室</button>
+            </div>
         </div>
     </div>
 	
@@ -56,9 +72,28 @@
                 document.getElementById('username-area').style.display = "none";
                 document.getElementById('chat-container').style.display = "flex";
 
-                stompClient.subscribe('/topic/public', function (msg) {
-                    showMessage(JSON.parse(msg.body));
-                });
+				stompClient.subscribe('/topic/public', function (msg) {
+                    const message = JSON.parse(msg.body);
+                    
+                    switch (message.type) {
+                            case "CHAT":
+                                showMessage(message);
+                                break;
+
+                            case "JOIN":
+                                showMessage(message);
+                                break;
+
+                            case "DELETE":
+                                const elem = document.getElementById(message.targetMessageId);
+                                if (elem) elem.remove();
+                                break;
+
+                            default:
+                                console.warn("未対応のメッセージタイプ:", message.type);
+                        }
+                    
+	                });
 
                 stompClient.send("/app/chat.addUser", {}, JSON.stringify({
                     sender: username,
@@ -215,10 +250,24 @@
 			    var reactionBtn = document.createElement("button");
 			    reactionBtn.innerText = "👍";
 			    reactionBtn.className = "reaction-btn";
+				
+				var deleteBtn = document.createElement("button");
+				deleteBtn.innerText = "削除";
+				deleteBtn.className = "reaction-btn";
+			
+				
 			    reactionBtn.onclick = function() {
 			        sendReaction(msgElement.id, "👍");
 			    };
+				
+				deleteBtn.onclick = function() {
+					deleteEvent(msgElement.id);
+				}
+				
 			    msgElement.appendChild(reactionBtn);
+				
+				msgElement.appendChild(deleteBtn);
+				
 				
 			} else if (message.type === 'REACTION') {
 				var target = document.getElementById(message.targetMessageId);
@@ -256,12 +305,35 @@
 		    document.getElementById("imageModal").style.display = "none";
 		}
 		
-		let deleteBtn = document.getElementById('delete-message');
-		deleteBtn.onclick = deleteButtonClick;
-		
-		function deleteButtonClick() {
-			console.log("実行チェック");
+			
+		function deleteEvent(deleteMessageId) {
+			console.log("aaa");
+			stompClient.send("/app/chat.deleteMessage", {}, JSON.stringify({
+				targetMessageId: deleteMessageId,
+				type: "DELETE"
+			}));
+			
+			document.getElementById(deleteMessageId).remove();
 		}
+		
+		function stanpFunction(){
+			document.getElementById("stanpElement").style.display= "block";
+		};
+		
+		function sendStanpMessage(button){
+			const value = button.textContent;
+			console.log("スタンプ送信", value);
+			stompClient.send("/app/chat.sendMessage", {}, JSON.stringify({
+                sender: username,
+                content: value || "",
+                type: "CHAT"
+            }));
+            document.getElementById('message').value = '';
+            document.getElementById('imageInput').value = '';
+            document.getElementById('preview-area').innerHTML = '';
+            selectedImage = null;
+		};
+
 		
 		
     </script>

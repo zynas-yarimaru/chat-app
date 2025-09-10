@@ -13,7 +13,8 @@ public class ChatMessage {
         CHAT,
         JOIN,
         LEAVE,
-        REACTION
+        REACTION,
+        DELETE
     }
 
     // getter / setter
