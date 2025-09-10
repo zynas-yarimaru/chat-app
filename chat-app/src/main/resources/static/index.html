@@ -201,11 +201,12 @@
                nameElement.className = (message.sender === username) ? "my-name" : "other-name";
                nameElement.innerText = message.sender;
                chat.appendChild(nameElement);
+			  
 			   
 			   //時刻表示 
 			   timeElement.className = (message.sender === username) ? "my-name" : "other-name";
-               timeElement.innerText = message.time.toString();
-               chat.appendChild(timeElement);
+			   var time = new Date(message.time);
+			   timeElement.innerText = time.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" });
 			   
 			    // テキストがあれば追加
 			    if (message.content) {
@@ -238,11 +239,12 @@
 			        sendReaction(msgElement.id, "👍");
 			    };
                 chat.appendChild(msgElement);
+				chat.appendChild(timeElement);
+				
                 if(message.sender != username){
                     chat.appendChild(reactionBtn);  
                 }
                 chat.scrollTop = chat.scrollHeight;
-				
 				
 				
 			} else if (message.type === 'REACTION') {
